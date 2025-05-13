@@ -1,54 +1,67 @@
 import requests
-from ripe.atlas.sagan import Result
 from ripe.atlas.sagan import TracerouteResult
 import numpy as np
-from aslookup import get_as_data
 import pyasn
+import networkx as nx
+import matplotlib.pyplot as plt
 
 asndb = pyasn.pyasn('ipasn_db.dat')
+G = nx.Graph()
 
-measurement_id = 100274119
-source = 'https://atlas.ripe.net/api/v2/measurements/' + str(measurement_id)+ '/results/'
-#source = "https://atlas.ripe.net/api/v2/measurements/" + str(measurement_id)+ "/?is_public=true"
-response = requests.get(source)
-data = response.json()
+measurement_ids = [100274119, 103112978]
 
-print(type(data))
+for measurement_id in measurement_ids:
+    source = 'https://atlas.ripe.net/api/v2/measurements/' + str(measurement_id)+ '/results/'
+    response = requests.get(source)
+    data = response.json()
 
-for x in data:
-    print(x)
-    parsed = TracerouteResult(x)
+    for x in data:
+        parsed = TracerouteResult(x)
+        path_ip = parsed.ip_path
 
-    print(parsed.hops)
+        arr = np.array(path_ip)
 
-    dest_ip = parsed.destination_address
-    src_ip = parsed.source_address
-    path_ip = parsed.ip_path
+        path_1 = arr[:,0]
+        path_2 = arr[:,1]
+        path_3 = arr[:,2]
 
-    arr = np.array(path_ip)
+        for path in [path_1, path_2, path_3]:
+            path = np.array(path)
+            #print("1. before:", path)
+            path = path[path != (None)] # remove nones
+            #print("1. after:", path)
+            for idx, x in enumerate(path):
+                asn = asndb.lookup(x)[0]
+                path[idx] = asn
+            
+            #print("2. before:", path)
+            path = np.array(list(filter(lambda x: x != None, path))) # Remove NONE values
+            path = np.array(list(filter(lambda x: x != 'None', path))) # Remove NONE values
+            #print("2. after:", path)
+            path_size = path.size
 
-    path_1 = arr[:,0]
-    path_size = path_1.size
+            if path_size > 0:
+                flat_path = [path[0]]
+                for i in range(1, path_size - 1):
+                    x = path[i]
+                    last_elem = flat_path[-1]
+                    if x == last_elem:
+                        continue
+                    else:
+                        flat_path.append(x)
 
-    path_2 = arr[:,1]
-    path_3 = arr[:,2]
+                flat_path = np.array(flat_path) 
+                # print("original path", path)
+                # print("flat path", flat_path)
 
-    for idx, x in enumerate(path_1):
-        print(idx, x) 
-        asn = asndb.lookup(x)[0]
-        path_1[idx] = asn
-    
-    flat_path_1 = [path_1[0]]
-    for i in range(1, path_size - 1):
-        x = path_1[i]
-        last_elem = flat_path_1[-1]
+                flat_path_size = flat_path.size
+                G.add_node(flat_path[0])
+                for i in range(1, flat_path_size):
+                    prev = flat_path[i-1]
+                    asn = flat_path[i]
+                    G.add_node(asn)
+                    G.add_edge(asn, prev)
 
-        if x == last_elem:
-            continue
-        else:
-            flat_path_1.append(x)
 
-    flat_path_1 = list(filter(lambda x: x != 'None', flat_path_1)) # Remove NONE values
-    flat_path_1 = np.array(flat_path_1) 
-    print("original path", path_1)
-    print("flat path", flat_path_1)
+nx.draw(G, with_labels=True, font_weight='bold')
+plt.show()
