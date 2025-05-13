@@ -8,10 +8,35 @@ import matplotlib.pyplot as plt
 asndb = pyasn.pyasn('ipasn_db.dat')
 G = nx.Graph()
 
-# 100274119, 103112978
-measurement_ids = [100274119, 103112978, 103112523]
+# # 100274119, 103112978
+# measurement_ids = [100274119, 103112978, 103112523]
+
+n_measurement = 100
+
+rnd_ids = np.random.randint(1, 103160683, size=n_measurement)
+measurement_ids = []
+# gap_limit = ??
+
+for id in rnd_ids:
+    url = f"https://atlas.ripe.net/api/v2/measurements/?type=traceroute&status=4&id={id}&af=4&is_public=true"
+    response = requests.get(url)
+    try:
+        response.raise_for_status()
+        data = response.json()
+        res = [m['id'] for m in data['results']]
+        if res:
+            measurement_ids.append(res[0])
+    except:
+        print("error, lets move on")
+        continue
+
+print(measurement_ids)
+arr_np = np.array(measurement_ids)
+print("Tried to found %d measurements, in the end, found %d measurements" % (n_measurement, arr_np.size))
+
 
 for measurement_id in measurement_ids:
+    print("found ID: ",measurement_id)
     source = 'https://atlas.ripe.net/api/v2/measurements/' + str(measurement_id)+ '/results/'
     response = requests.get(source)
     data = response.json()
