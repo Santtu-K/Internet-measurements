@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 asndb = pyasn.pyasn('ipasn_db.dat')
 G = nx.Graph()
 
-measurement_ids = [100274119, 103112978]
+# 100274119, 103112978
+measurement_ids = [100274119, 103112978, 103112523]
 
 for measurement_id in measurement_ids:
     source = 'https://atlas.ripe.net/api/v2/measurements/' + str(measurement_id)+ '/results/'
@@ -21,11 +22,17 @@ for measurement_id in measurement_ids:
 
         arr = np.array(path_ip)
 
-        path_1 = arr[:,0]
-        path_2 = arr[:,1]
-        path_3 = arr[:,2]
+        #print(arr.shape[1])
 
-        for path in [path_1, path_2, path_3]:
+        paths = []
+        for i in range(1, arr.shape[1] + 1):
+            paths.append(arr[:,i-1])
+
+        # path_1 = arr[:,0]
+        # path_2 = arr[:,1]
+        # path_3 = arr[:,2]
+
+        for path in paths:
             path = np.array(path)
             #print("1. before:", path)
             path = path[path != (None)] # remove nones
