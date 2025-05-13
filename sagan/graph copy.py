@@ -11,12 +11,11 @@ G = nx.Graph()
 # # 100274119, 103112978
 # measurement_ids = [100274119, 103112978, 103112523]
 
-n_measurement = 10
+n_measurement = 1000
 
 rnd_ids = np.random.randint(1, 103160683, size=n_measurement)
 measurement_ids = []
 # gap_limit = ??
-#rnd_ids = [1,-2,-2]
 
 for id in rnd_ids:
     url = f"https://atlas.ripe.net/api/v2/measurements/?type=traceroute&status=4&id={id}&af=4&is_public=true"
@@ -26,9 +25,7 @@ for id in rnd_ids:
         data = response.json()
         res = [m['id'] for m in data['results']]
         if res:
-            val = res[0]
-            if isinstance(val, int):
-                measurement_ids.append(res[0])
+            measurement_ids.append(res[0])
     except:
         print("error, lets move on")
         continue
@@ -39,7 +36,6 @@ print("Tried to found %d measurements, in the end, found %d measurements" % (n_m
 
 
 for measurement_id in measurement_ids:
-    #measurement_id = 24733372
     print("found ID: ",measurement_id)
     source = 'https://atlas.ripe.net/api/v2/measurements/' + str(measurement_id)+ '/results/'
     response = requests.get(source)
@@ -48,8 +44,6 @@ for measurement_id in measurement_ids:
     for x in data:
         parsed = TracerouteResult(x)
         path_ip = parsed.ip_path
-
-        print(path_ip)
 
         arr = np.array(path_ip)
 
