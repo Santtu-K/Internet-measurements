@@ -11,12 +11,12 @@ G = nx.Graph()
 # # 100274119, 103112978
 # measurement_ids = [100274119, 103112978, 103112523]
 
-n_measurement = 10
+n_measurement = 100
 
 rnd_ids = np.random.randint(1, 103160683, size=n_measurement)
 measurement_ids = []
 # gap_limit = ??
-#rnd_ids = [1,-2,-2]
+# rnd_ids = [1,-2,-2]
 
 for id in rnd_ids:
     url = f"https://atlas.ripe.net/api/v2/measurements/?type=traceroute&status=4&id={id}&af=4&is_public=true"
