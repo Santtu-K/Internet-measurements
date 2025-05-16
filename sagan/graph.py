@@ -9,7 +9,7 @@ import time
 asndb = pyasn.pyasn('ipasn_db.dat')
 G = nx.Graph()
 
-page_size = 500
+page_size = 100
 stop = int(time.time()) # time now
 start = stop - 86400 # time yesterday
 
@@ -79,6 +79,7 @@ for measurement_id in measurement_ids:
 
                     last_flat_path = flat_path[-1]
 
+                    last_elem = asn_paths[-1]
                     G.add_node(flat_path[0])
                     for i in range(1, flat_path_size):
                         prev = flat_path[i-1]
@@ -110,4 +111,8 @@ for measurement_id in measurement_ids:
 nx.draw(G, with_labels=True, font_weight='bold')
 plt.show()
 
+import pickle
 
+# save graph
+file_name = '500graph.pickle'
+pickle.dump(G, open(file_name, 'wb'))
