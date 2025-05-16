@@ -12,8 +12,10 @@ G = nx.Graph()
 page_size = 100
 stop = int(time.time()) # time now
 start = stop - 86400 # time yesterday
+hour = 60*60
+starts = 
 
-url = f"https://atlas.ripe.net/api/v2/measurements/?type=traceroute&status=4&start_time__gte={start}&page_size={page_size}"
+url = f"https://atlas.ripe.net/api/v2/measurements/?type=traceroute&status=4&start_time__gte={start}&page_size={page_size}&is_oneoff=True"
 response = requests.get(url)
 print(response.raise_for_status())
 data = response.json()
@@ -21,6 +23,8 @@ res = [m['id'] for m in data['results']]
 measurement_ids = np.array(res)
 print(measurement_ids.size)
 print(measurement_ids.shape)
+
+
 
 arr_np = np.array(measurement_ids)
 #print("Tried to found %d measurements, in the end, found %d measurements" % (n_measurement, arr_np.size))
