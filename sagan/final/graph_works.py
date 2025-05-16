@@ -9,15 +9,17 @@ import random
 
 
 # load raw graph object from file
-filename = '2500graph.pickle'
+filename = '100graph.pickle'
 G = pickle.load(open(filename, 'rb'))
-#nx.draw(G, with_labels=True, font_weight='bold')
 
+# Degrees for pruning
 degrees = [[int(asn),deg] for asn, deg in G.degree()]
 
+# Display unpruned Graph
 nx.draw(G, with_labels=True, font_weight='bold')
 plt.show()
-# Prune scores for all ASns/nodes
+
+# Prune scores for all ASns/nodes, Prune score is how many pruned node/ASs where connected to a certain not-pruned AS
 prune_scores_list = [[int(n),1] for n in G]
 prune_scores = dict(prune_scores_list)
 
@@ -44,24 +46,25 @@ while flag == True:
             flag = True
 
     degrees = [[int(asn),deg] for asn, deg in G.degree()]
+    
+# Display pruned graph
+nx.draw(G, with_labels=True, font_weight='bold')
+plt.show()
 
 # Prune scores for only the "important" ASns/nodes (the ones that are left after pruning)
 important_nodes_list = [(int(n), prune_scores[n]) for n in G]
 important_nodes = dict(important_nodes_list)
 
 
-
-#print(allocated_ips)
-
-
 # THESE ARE FOR THE PRUNED GRAPH
 asns = [int(x) for x in G]
 sorted_asns = sorted(asns)
 
+# Calculate how many ips do each important as allocate
 allocated_ips = {}
 for i, x in enumerate(G):
     asn = int(x)
-    n_ip = func.get_total_allocatable_ips(asn)
+    n_ip = func.get_total_allocatable_ips(asn) # helper function
     allocated_ips[asn] = n_ip
 
 # bar chart: IP
@@ -79,9 +82,8 @@ plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.show()
 
-# degree part
+# Degrees for ASs
 degrees = [deg for _, deg in G.degree()]
-#print(degrees)
 
 # bar chart: degree
 from collections import Counter
@@ -101,24 +103,25 @@ plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.show()
 
-# Path scores
+# Path scores, how many times an AS is traversed, when calculating a shortest path between 2 ASs
 all_nodes = list(G.nodes()) # convert nodes to a list
 num_nodes = len(all_nodes)
-num_samples = min(num_nodes**num_nodes, 10^6)  #Total  Number of random node pairs to pick to find shortest path
 
-pairs = list(itertools.combinations(all_nodes, 2))
-random.shuffle(pairs)
-n_pairs = pairs[1:num_samples]
+num_samples = min(num_nodes**num_nodes, 10**6)  #Total  Number of random node pairs to pick to find shortest path
 
-path_scores = {}
+pairs = list(itertools.combinations(all_nodes, 2)) # All possible pairs
+random.shuffle(pairs) # Shuffle the pairs
+n_pairs = pairs[1:num_samples] # Select n pairs
 
+# Init path scores for every important AS
+path_scores = {} 
 for asn in G:
     path_scores[int(asn)] = 1
 
 for pair in n_pairs:
     src, dst = pair
     try:
-        path = nx.shortest_path(G, source=src, target=dst)#finding shortest path between the 2
+        path = nx.shortest_path(G, source=src, target=dst) #finding shortest path between the 2
         for node in path[1:-1]:  # skip first and last
             path_scores[node] += 1
     except nx.NetworkXNoPath:
@@ -140,6 +143,7 @@ plt.bar(x_asn, y_path_score, color='skyblue', edgecolor='black')
 plt.xticks(x_asn)
 plt.title("Distribution of path scores of ASns")
 plt.xlabel("ASn")
+plt.yscale('log')
 plt.ylabel("Path score")
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
@@ -159,7 +163,4 @@ plt.xlabel("ASn")
 plt.ylabel("Prune score")
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.show()
-
-nx.draw(G, with_labels=True, font_weight='bold')
 plt.show()

@@ -9,6 +9,7 @@ import time
 asndb = pyasn.pyasn('ipasn_db.dat')
 G = nx.Graph()
 
+# Selecting and stacking valid measurement IDs
 page_size = 500
 stop = int(time.time()) # time now
 start = stop - 86400 # time yesterday
@@ -17,7 +18,6 @@ a = list(range(1,5+1))
 starts = [start + (x*hour*2)for x in a]
 
 measurement_ids = []
-#print(starts, "adsd", len(starts))
 for start in starts:
     url = f"https://atlas.ripe.net/api/v2/measurements/?type=traceroute&status=4&start_time__gte={start}&page_size={page_size}&is_oneoff=true"
     response = requests.get(url)
@@ -30,8 +30,8 @@ for start in starts:
     ples = np.array(measurement_ids)
 
 measurement_ids = np.array(measurement_ids)
-#print("Tried to found %d measurements, in the end, found %d measurements" % (n_measurement, arr_np.size))
 
+# Loop over all found measurement IDs
 for measurement_id in measurement_ids:
     source = 'https://atlas.ripe.net/api/v2/measurements/' + str(measurement_id)+ '/results/'
     response = requests.get(source)
@@ -39,7 +39,7 @@ for measurement_id in measurement_ids:
 
     for x in data:
         parsed = TracerouteResult(x)
-        path_ip = parsed.ip_path
+        path_ip = parsed.ip_path # Get IP path of traceroute
 
         asn_paths = []
 
@@ -116,8 +116,9 @@ for measurement_id in measurement_ids:
                     G.add_node(asn)
                     G.add_edge(asn, prev)
 
-nx.draw(G, with_labels=True, font_weight='bold')
-plt.show()
+# Plot the graph
+# nx.draw(G, with_labels=True, font_weight='bold')
+# plt.show()
 
 import pickle
 
