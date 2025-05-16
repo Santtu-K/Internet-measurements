@@ -4,6 +4,8 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import functions as func
+import itertools
+import random
 
 
 # load raw graph object from file
@@ -47,72 +49,117 @@ while flag == True:
 important_nodes_list = [(int(n), prune_scores[n]) for n in G]
 important_nodes = dict(important_nodes_list)
 
+
+
+#print(allocated_ips)
+
+
+# THESE ARE FOR THE PRUNED GRAPH
+asns = [int(x) for x in G]
+sorted_asns = sorted(asns)
+
 allocated_ips = {}
 for i, x in enumerate(G):
     asn = int(x)
     n_ip = func.get_total_allocatable_ips(asn)
     allocated_ips[asn] = n_ip
 
-print(allocated_ips)
+# bar chart: IP
+x_asn_ip = [str(asn) for asn in sorted_asns]
+y_path_score_ip = [allocated_ips[asn] for asn in sorted_asns]
 
+plt.figure(figsize=(10, 6))
+plt.bar(x_asn_ip, y_path_score_ip, color='skyblue', edgecolor='black')
+plt.xticks(x_asn_ip)
+plt.title("Distribution of number of allocated IPv4 @s by ASns")
+plt.xlabel("ASn")
+plt.ylabel("# of allocated IPv4 @s")
+plt.yscale('log')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
 
-# THESE ARE FOR THE PRUNED GRAPH
+# degree part
+degrees = [deg for _, deg in G.degree()]
+#print(degrees)
 
-# #  histogram 
-# plt.figure(figsize=(10, 6))
-# plt.hist(degrees, bins=range(1, max(degrees)+2), edgecolor='black', color='skyblue')
-# plt.title("Distribution of Node Degrees in ASN Graph")
-# plt.xlabel("Degree (Number of Connections)")
-# plt.ylabel("Number of ASNs")
-# plt.grid(axis='y', linestyle='--', alpha=0.7)
-# plt.tight_layout()
-# plt.show()
+# bar chart: degree
+from collections import Counter
 
+degree_counts = Counter(degrees)
+sorted_counts = sorted(degree_counts.items())
+x = [deg for deg, _ in sorted_counts]
+y = [count for _, count in sorted_counts]
 
-# from collections import defaultdict
-# import random
+plt.figure(figsize=(10, 6))
+plt.bar(x, y, color='skyblue', edgecolor='black')
+plt.xticks(x)
+plt.title("Distribution of Node Degrees in ASN Graph")
+plt.xlabel("Degree")
+plt.ylabel("Number of ASNs")
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
 
-# all_nodes = list(G.nodes()) # convert nodes to a list
-# num_nodes = len(all_nodes)
-# num_samples = 1000  #Total  Number of random node pairs to pick to find shortest path
+# Path scores
+all_nodes = list(G.nodes()) # convert nodes to a list
+num_nodes = len(all_nodes)
+num_samples = min(num_nodes**num_nodes, 10^6)  #Total  Number of random node pairs to pick to find shortest path
 
-# # Score: how many times each node appears in the middle of shortest paths
-# score = defaultdict(int) # empty dictionary to keep count how many times the nodes apprears
+pairs = list(itertools.combinations(all_nodes, 2))
+random.shuffle(pairs)
+n_pairs = pairs[1:num_samples]
 
-# for _ in range(num_samples):
-#     src, dst = random.sample(all_nodes, 2)# picking nodes
-#     try:
-#         path = nx.shortest_path(G, source=src, target=dst)#finding shortest path between the 2
-#         for node in path[1:-1]:  # skip first and last
-#             score[node] += 1
-#     except nx.NetworkXNoPath:
-#         continue  # no path between this pair, skip that pair and continues
+path_scores = {}
 
-# used_nodes = len(score) #how many nodes were used
-# all_scores = list(score.values()) #list of all score 
+for asn in G:
+    path_scores[int(asn)] = 1
 
-# print(f"\nTotal nodes in graph: {num_nodes}")
-# print(f"Nodes used in paths (score ≥ 1): {used_nodes}")
+for pair in n_pairs:
+    src, dst = pair
+    try:
+        path = nx.shortest_path(G, source=src, target=dst)#finding shortest path between the 2
+        for node in path[1:-1]:  # skip first and last
+            path_scores[node] += 1
+    except nx.NetworkXNoPath:
+        continue  # no path between this pair, skip that pair and continues
+all_path_scores = list(path_scores.values()) #list of all score 
 
 # # top asn with high score help us know important asns or central asns
-# top = sorted(score.items(), key=lambda x: x[1], reverse=True)[:10]
-# print("\nTop 10 nodes by score:")
-# for node, val in top:
-#     print(f"Node {node} → {val}")
+top = sorted(path_scores.items(), key=lambda x: x[1], reverse=True)[:10]
+print("\nTop 10 nodes by score:")
+for node, val in top:
+    print(f"ASn {node} → {val}")
 
-# # Plot histogram
-# plt.figure(figsize=(10, 6))
-# plt.hist(all_scores, bins=30, edgecolor='black', color='skyblue')
-# plt.title("Node Path Score Histogram")
-# plt.xlabel("Times appeared in shortest paths")
-# plt.ylabel("Number of nodes")
-# plt.grid(True, linestyle='--', alpha=0.6)
-# plt.tight_layout()
-# plt.show()
+# bar chart: path score
+x_asn = [str(asn) for asn in sorted_asns]
+y_path_score = [path_scores[asn] for asn in sorted_asns]
+
+plt.figure(figsize=(10, 6))
+plt.bar(x_asn, y_path_score, color='skyblue', edgecolor='black')
+plt.xticks(x_asn)
+plt.title("Distribution of path scores of ASns")
+plt.xlabel("ASn")
+plt.ylabel("Path score")
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
 
 
+
+# bar chart: prune score
+x_prune = [str(asn) for asn in sorted_asns]
+y_prune = [important_nodes[asn] for asn in sorted_asns]
+
+plt.figure(figsize=(10, 6))
+plt.bar(x_prune, y_prune, color='skyblue', edgecolor='black')
+plt.xticks(x_prune)
+plt.title("Distribution of prune scores of ASns")
+plt.xlabel("ASn")
+plt.ylabel("Prune score")
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
 
 nx.draw(G, with_labels=True, font_weight='bold')
 plt.show()
-
-#print("prune score for ASn = 174",important_nodes[174])

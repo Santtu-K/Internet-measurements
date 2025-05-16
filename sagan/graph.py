@@ -9,24 +9,27 @@ import time
 asndb = pyasn.pyasn('ipasn_db.dat')
 G = nx.Graph()
 
-page_size = 100
+page_size = 500
 stop = int(time.time()) # time now
 start = stop - 86400 # time yesterday
 hour = 60*60
-starts = 
+a = list(range(1,5+1))
+starts = [start + (x*hour*2)for x in a]
 
-url = f"https://atlas.ripe.net/api/v2/measurements/?type=traceroute&status=4&start_time__gte={start}&page_size={page_size}&is_oneoff=True"
-response = requests.get(url)
-print(response.raise_for_status())
-data = response.json()
-res = [m['id'] for m in data['results']]
-measurement_ids = np.array(res)
-print(measurement_ids.size)
-print(measurement_ids.shape)
+measurement_ids = []
+#print(starts, "adsd", len(starts))
+for start in starts:
+    url = f"https://atlas.ripe.net/api/v2/measurements/?type=traceroute&status=4&start_time__gte={start}&page_size={page_size}&is_oneoff=true"
+    response = requests.get(url)
+    print(response.raise_for_status())
+    data = response.json()
+    res = [m['id'] for m in data['results']]
+    #print(res)
+    for id in res:
+        measurement_ids.append(id)
+    ples = np.array(measurement_ids)
 
-
-
-arr_np = np.array(measurement_ids)
+measurement_ids = np.array(measurement_ids)
 #print("Tried to found %d measurements, in the end, found %d measurements" % (n_measurement, arr_np.size))
 
 for measurement_id in measurement_ids:
@@ -67,7 +70,7 @@ for measurement_id in measurement_ids:
             last_elem = asn_paths[-1]
             
             if isinstance(last_elem, int) == False: # A hop contained multiple ASns
-                if len(last_elem) > 1: 
+                if len(last_elem) > 1 and path_size > 1: 
                     print("A hop contained multiple ASns")
                     flat_path = [asn_paths[0]]
                     for i in range(1, path_size - 1): # Flatten the path --> No consecutive same ASNs in the path
@@ -90,9 +93,10 @@ for measurement_id in measurement_ids:
                         asn = flat_path[i]
                         G.add_node(asn)
                         G.add_edge(asn, prev)
-                    for _, asn in last_elem:
-                        G.add_node(asn)
-                        G.add_edge(asn, last_flat_path)
+                    if len(last_elem) > 1:
+                        for asn in last_elem:
+                            G.add_node(asn)
+                            G.add_edge(asn, last_flat_path)
             else: # Every hop had exactly one ASn
                 flat_path = [asn_paths[0]]
                 for i in range(1, path_size): # Flatten the path --> No consecutive same ASNs in the path
@@ -118,5 +122,5 @@ plt.show()
 import pickle
 
 # save graph
-file_name = '500graph.pickle'
+file_name = '2500graph.pickle'
 pickle.dump(G, open(file_name, 'wb'))
